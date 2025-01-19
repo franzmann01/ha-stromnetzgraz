@@ -213,7 +213,7 @@ class SNGrazDataCoordinator(DataUpdateCoordinator):
             # Strictly speaking, the same applies for any binning and reading interval
             df["readTime"] = df["readTime"] - timedelta(seconds=1)
             df_hour = (
-                df.groupby(pandas.Grouper(freq="H", key="readTime"))
+                df.groupby(pandas.Grouper(freq="h", key="readTime"))
                 .agg(
                     {
                         "CONSUMP": lambda x: numpy.nan if len(x) == 0 else sum(x),
