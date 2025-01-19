@@ -208,6 +208,10 @@ class SNGrazDataCoordinator(DataUpdateCoordinator):
             # HA statistics finest interval is hourly, so let's break it down by hour
             # Also, do some filtering afterwards, pandas otherwise creates "empty" rows
             df = pandas.DataFrame(_data)
+            # The binning to full hours will attribute readings at full hours e.g. 9:00 to the bin of 9:00-10:00
+            # However the consumption actually belongs to the 8:00-9:00 bin.
+            # Strictly speaking, the same applies for any binning and reading interval
+            df["readTime"] = df["readTime"] - timedelta(seconds=1)
             df_hour = (
                 df.groupby(pandas.Grouper(freq="H", key="readTime"))
                 .agg(
