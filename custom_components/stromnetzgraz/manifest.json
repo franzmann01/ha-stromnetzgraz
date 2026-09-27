@@ -2,16 +2,16 @@
   "domain": "stromnetzgraz",
   "name": "Stromnetz Graz",
   "codeowners": [
-    "@dreautall"
+    "@franzmann01"
   ],
   "config_flow": true,
   "dependencies": ["recorder"],
-  "documentation": "https://github.com/dreautall/ha-stromnetzgraz",
+  "documentation": "https://github.com/franzmann01/ha-stromnetzgraz",
   "homekit": {},
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/dreautall/ha-stromnetzgraz/issues",
-  "requirements": ["pandas", "pyJWT", "stromnetzgraz==0.1.8"],
+  "issue_tracker": "https://github.com/franzmann01/ha-stromnetzgraz/issues",
+  "requirements": ["pandas", "pyJWT", "stromnetzgraz"],
   "ssdp": [],
-  "version": "0.1.14",
+  "version": "0.1.15",
   "zeroconf": []
 }
