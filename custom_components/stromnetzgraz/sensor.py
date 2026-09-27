@@ -10,7 +10,7 @@ import numpy
 import aiohttp
 
 from homeassistant.components.recorder import get_instance
-from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
+from homeassistant.components.recorder.models import StatisticData, StatisticMetaData, StatisticMeanType
 from homeassistant.components.recorder.statistics import (
     async_add_external_statistics,
     get_last_statistics,
@@ -297,12 +297,13 @@ class SNGrazDataCoordinator(DataUpdateCoordinator):
             #    unit_of_measurement=sensor.get("unit"),
             # )
             metadata = StatisticMetaData(
-                has_mean=False,
+                mean_type=StatisticMeanType.NONE,
                 has_sum=True,
                 name=f"{meter._short_name} Consumption",
                 source=DOMAIN,
                 statistic_id=statistic_id,
                 unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+                unit_class="energy",
             )
             _LOGGER.info(f"adding {len(statistics)} entries to {statistic_id}")
             # async_import_statistics(self.hass, metadata, statistics)
