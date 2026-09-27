@@ -6,8 +6,7 @@ import logging
 import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.const import Platform
+from homeassistant.const import Platform, EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import HomeAssistant
 from homeassistant.const import (
     CONF_USERNAME,
@@ -24,25 +23,33 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Stromnetz Graz from a config entry."""
 
-    conn = StromNetzGraz(entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
+    async def _async_delayed_setup(*_):
+        """Run the actual connection and sensor setup in the background."""
+        conn = StromNetzGraz(entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
 
-    hass.data[DOMAIN] = conn
+        try:
+            await conn.authenticate()
+        except asyncio.TimeoutError as err:
+            _LOGGER.error("Timeout connecting: %s", err)
+            return
+        except aiohttp.ClientError as err:
+            _LOGGER.error("Error connecting: %s ", err)
+            return
+        except InvalidLogin as err:
+            _LOGGER.error("Invalid Auth: %s", err)
+            return
+        except Exception as exp:
+            _LOGGER.error("Failed to login. %s", exp)
+            return
 
-    try:
-        await conn.authenticate()
-    except asyncio.TimeoutError as err:
-        raise ConfigEntryNotReady from err
-    except aiohttp.ClientError as err:
-        _LOGGER.error("Error connecting: %s ", err)
-        return False
-    except InvalidLogin as err:
-        _LOGGER.error("Invalid Auth: %s", err)
-        return False
-    except Exception as exp:
-        _LOGGER.error("Failed to login. %s", exp)
-        return False
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # If HA is already running (e.g., you click 'Reload' in the UI), run it immediately
+    if hass.is_running:
+        hass.async_create_task(_async_delayed_setup())
+    else:
+        # Otherwise, wait for HA to fully boot before starting the network calls
+        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _async_delayed_setup)
 
     return True
 
@@ -54,7 +61,10 @@ async def async_update_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    
+    if unload_ok and DOMAIN in hass.data:
         await hass.data[DOMAIN].close_connection()
+        hass.data.pop(DOMAIN)
 
     return unload_ok
